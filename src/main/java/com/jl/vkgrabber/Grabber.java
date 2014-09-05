@@ -26,52 +26,47 @@ import com.jl.vkgrabber.util.Configuration;
  */
 public class Grabber {
 
-	public static void main(String args[]) throws Exception {
-		URIBuilder builder = new URIBuilder();
-		builder.setScheme("https")
-				.setHost("api.vk.com")
-				.setPath("/method/audio.get")
-				.setParameter("oid",
-						Configuration.getProperty(Configuration.USER_ID))
-				.setParameter("need_user", "0")
-				.setParameter("count", "2000")
-				.setParameter("offset", "0")
-				.setParameter("access_token",
-						Configuration.getProperty(Configuration.TOKEN));
-		URI uri = builder.build();
+    public static void main(String args[]) throws Exception {
+        URIBuilder builder = new URIBuilder();
+        builder.setScheme("https").setHost("api.vk.com").setPath("/method/audio.get").setParameter("oid",
+                Configuration.getProperty(Configuration.USER_ID)).setParameter("need_user", "0").setParameter("count",
+                "2000").setParameter("offset", "0").setParameter("access_token",
+                Configuration.getProperty(Configuration.TOKEN));
+        URI uri = builder.build();
 
-		HttpGet getRequest = new HttpGet(uri);
-		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-			HttpResponse response = httpClient.execute(getRequest);
-			HttpEntity entity = response.getEntity();
-			if (entity != null) {
-				try (InputStream stream = entity.getContent()) {
-					try {
-						parseAndDownload(IOUtils.toString(stream));
-					} catch (IOException | ParseException exception) {
-						exception.printStackTrace();
-					}
-				}
-			}
-		}
-	}
+        HttpGet getRequest = new HttpGet(uri);
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpResponse response = httpClient.execute(getRequest);
+            HttpEntity entity = response.getEntity();
+            if (entity != null) {
+                try (InputStream stream = entity.getContent()) {
+                    try {
+                        parseAndDownload(IOUtils.toString(stream));
+                    } catch (IOException | ParseException exception) {
+                        exception.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
 
-	private static void parseAndDownload(String response) throws IOException,
-			ParseException {
-		JSONParser parser = new JSONParser();
-		JSONObject jsonResponse = (JSONObject) parser.parse(response);
-		JSONArray mp3list = (JSONArray) jsonResponse.get("response");
-		for (Object jsonObject : mp3list) {
-			JSONObject mp3 = (JSONObject) jsonObject;
-			String path = Configuration
-					.getProperty(Configuration.OUTPUT_FOLDER)
-					+ "/"
-					+ mp3.get("artist") + " - " + mp3.get("title");
-			File file = new File(path + ".mp3");
-			if (!file.exists()) {
-				FileUtils.copyURLToFile(new URL((String) mp3.get("url")), file);
-			}
-		}
-	}
+    private static void parseAndDownload(String response) throws IOException, ParseException {
+        JSONParser parser = new JSONParser();
+        JSONObject jsonResponse = (JSONObject) parser.parse(response);
+        JSONArray mp3list = (JSONArray) jsonResponse.get("response");
+        for (Object jsonObject : mp3list) {
+            try {
+                JSONObject mp3 = (JSONObject) jsonObject;
+                String path = (Configuration.getProperty(Configuration.OUTPUT_FOLDER) + File.separator + mp3.get("artist")
+                        + " - " + mp3.get("title")).replaceAll("\"", "").replaceAll("?", "").replaceAll("/", "").replaceAll("\\", "");
+                File file = new File(path + ".mp3");
+                if (!file.exists()) {
+                    FileUtils.copyURLToFile(new URL((String) mp3.get("url")), file);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
 }
